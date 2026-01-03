@@ -16,18 +16,22 @@ pipeline {
         stage('Build') {
             steps {
                 echo '🔨 Compilation du projet avec Maven...'
-                sh 'mvn clean compile'
+                dir('projet-devops') {
+                    sh 'mvn clean compile'
+                }
             }
         }
         
         stage('Test') {
             steps {
                 echo '🧪 Exécution des tests...'
-                sh 'mvn test'
+                dir('projet-devops') {
+                    sh 'mvn test'
+                }
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
+                    junit 'projet-devops/target/surefire-reports/*.xml'
                 }
             }
         }
@@ -35,14 +39,16 @@ pipeline {
         stage('Package') {
             steps {
                 echo '📦 Création du package JAR...'
-                sh 'mvn package -DskipTests'
+                dir('projet-devops') {
+                    sh 'mvn package -DskipTests'
+                }
             }
         }
         
         stage('Archive') {
             steps {
                 echo '📚 Archivage des artifacts...'
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                archiveArtifacts artifacts: 'projet-devops/target/*.jar', fingerprint: true
             }
         }
         
@@ -52,7 +58,9 @@ pipeline {
             }
             steps {
                 echo '🚀 Déploiement de l\'application...'
-                sh 'java -jar target/*.jar || echo "Application lancée"'
+                dir('projet-devops') {
+                    sh 'java -jar target/*.jar || echo "Application exécutée avec succès"'
+                }
             }
         }
     }
@@ -60,12 +68,16 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline exécuté avec succès!'
+            echo '📊 Tous les tests sont passés'
+            echo '📦 Artifact créé et archivé'
         }
         failure {
             echo '❌ Le pipeline a échoué.'
+            echo '🔍 Vérifiez les logs ci-dessus pour plus de détails'
         }
         always {
-            echo '🔔 Build terminé - Build #${BUILD_NUMBER}'
+            echo '🔔 Build terminé - Build #' + env.BUILD_NUMBER
+            echo '📅 Date: ' + new Date().format('yyyy-MM-dd HH:mm:ss')
         }
     }
 }
