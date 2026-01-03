@@ -21,4 +21,5 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
+        working-directory: projet-devops
         run: mvn clean install
