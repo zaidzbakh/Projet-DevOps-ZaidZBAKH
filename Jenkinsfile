@@ -5,6 +5,10 @@ pipeline {
         maven 'Maven-3.8.6'
     }
     
+    environment {
+        SLACK_CHANNEL = '#devops-notifications'
+    }
+    
     stages {
         stage('Checkout') {
             steps {
@@ -63,21 +67,51 @@ pipeline {
                 }
             }
         }
+        
+        stage('Notify Slack') {
+            steps {
+                echo '📢 Envoi de notification Slack...'
+                script {
+                    def buildStatus = currentBuild.result ?: 'SUCCESS'
+                    def color = buildStatus == 'SUCCESS' ? 'good' : 'danger'
+                    def emoji = buildStatus == 'SUCCESS' ? '✅' : '❌'
+                    
+                    slackSend(
+                        channel: env.SLACK_CHANNEL,
+                        color: color,
+                        message: """
+${emoji} *Build ${buildStatus}*
+*Projet:* ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*Branche:* ${env.GIT_BRANCH}
+*Durée:* ${currentBuild.durationString}
+*URL:* ${env.BUILD_URL}
+                        """.stripIndent()
+                    )
+                }
+            }
+        }
     }
     
     post {
         success {
             echo '✅ Pipeline exécuté avec succès!'
-            echo '📊 Tous les tests sont passés'
-            echo '📦 Artifact créé et archivé'
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'good',
+                message: "✅ Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} terminé avec succès! 🎉"
+            )
         }
         failure {
             echo '❌ Le pipeline a échoué.'
-            echo '🔍 Vérifiez les logs ci-dessus pour plus de détails'
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'danger',
+                message: "❌ Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} a échoué! Vérifiez les logs: ${env.BUILD_URL}"
+            )
         }
         always {
             echo '🔔 Build terminé - Build #' + env.BUILD_NUMBER
-            echo '📅 Date: ' + new Date().format('yyyy-MM-dd HH:mm:ss')
         }
     }
 }
