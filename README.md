@@ -1,1 +1,4 @@
-# Projet DevOps\nNom: ZBAKH\nPrénom: Zaid\nClass: 5IIRT G3
+# Projet DevOps
+Nom: ZBAKH
+Prénom: Zaid
+Class: 5IIRT G3
